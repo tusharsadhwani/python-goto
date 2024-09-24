@@ -5,12 +5,6 @@ import types
 import functools
 
 
-try:
-    _array_to_bytes = array.array.tobytes
-except AttributeError:
-    _array_to_bytes = array.array.tostring
-
-
 class _Bytecode:
     def __init__(self):
         code = (lambda: x if x else y).__code__.co_code
@@ -40,23 +34,6 @@ class _Bytecode:
 
 
 _BYTECODE = _Bytecode()
-
-
-def _make_code(code, codestring):
-    args = [
-        code.co_argcount,  code.co_nlocals,     code.co_stacksize,
-        code.co_flags,     codestring,          code.co_consts,
-        code.co_names,     code.co_varnames,    code.co_filename,
-        code.co_name,      code.co_firstlineno, code.co_lnotab,
-        code.co_freevars,  code.co_cellvars
-    ]
-
-    try:
-        args.insert(1, code.co_kwonlyargcount)  # PY3
-    except AttributeError:
-        pass
-
-    return types.CodeType(*args)
 
 
 def _parse_instructions(code):
@@ -229,7 +206,7 @@ def _patch_code(code):
             pos = _write_instructions(buf, pos, ops)
             _inject_nop_sled(buf, pos, end)
 
-    return _make_code(code, _array_to_bytes(buf))
+    return code.replace(co_code=buf.tobytes())
 
 
 def with_goto(func_or_code):
